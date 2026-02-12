@@ -165,10 +165,10 @@
     "fork-ts-checker-webpack-plugin": "^9.0.0",
     "husky": "^9.0.0",
     "inquirer": "^11.0.0",
-    "jest": "^29.7.0",
+    "jest": "^30.0.5",
     "jest-axe": "^9.0.0",
-    "jest-cli": "^29.7.0",
-    "jest-environment-jsdom": "^29.7.0",
+    "jest-cli": "^30.0.5",
+    "jest-environment-jsdom": "^30.0.5",
     "lint-staged": "^15.0.0",
     "madge": "8.0.0",
     "monaco-editor-webpack-plugin": "^7.1.0",
@@ -202,13 +202,11 @@
     "form-data": "^4.0.4"
   },
   "scripts": {
-    "start": "concurrently --kill-others --prefix=name --names=SERVER,MOCK --prefix-colors=cyan,reset --passthrough-arguments 'HOT=true yarn fec:dev-proxy --clouddotEnv prod {@}' 'mockdata/mockserver.py' --",
+    "dev": "concurrently --kill-others --prefix=name --names=SERVER,MOCK --prefix-colors=cyan,reset --passthrough-arguments 'HOT=true fec dev --clouddotEnv prod {@}' 'mockdata/mockserver.py' --",
+    "start": "concurrently --kill-others --prefix=name --names=SERVER,MOCK --prefix-colors=cyan,reset --passthrough-arguments 'fec dev-proxy --clouddotEnv prod {@}' 'mockdata/mockserver.py' --",
     "build": "fec build",
     "build:prod": "MODE=prod yarn build",
     "build:prod:monitored": "run/build-prod-monitored.sh",
-    "fec:static": "fec static",
-    "fec:dev-server": "fec dev",
-    "fec:dev-proxy": "fec dev-proxy",
     "verify": "concurrently --group --names=BUILD,LINT,TEST 'yarn build:prod' 'NODE_OPTIONS=--max-old-space-size=4096 yarn lint-prettier' 'yarn test'",
     "insights-proxy": "make insights-proxy-check && run/insights-proxy.sh",
     "stop-insights-proxy": "run/podman-or-docker.sh kill insightsproxy; run/podman-or-docker.sh rm --force insightsproxy; true",
@@ -253,7 +251,7 @@
     ]
   },
   "engines": {
-    "node": ">= 18.12.0",
+    "node": ">=18.12.0 <19.0.0 || >=20.0.0 <21.0.0 || >=22.0.0",
     "yarn": ">= 1.22.19"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"

@@ -25,6 +25,7 @@ import {
   Tr,
 } from '@patternfly/react-table';
 
+import { ConfirmationDialog } from '~/common/modals/ConfirmationDialog';
 import { LoadingSkeletonCard } from '~/components/clusters/common/LoadingSkeletonCard/LoadingSkeletonCard';
 import shouldShowModal from '~/components/common/Modal/ModalSelectors';
 import { useAddUser } from '~/queries/ClusterDetailsQueries/AccessControlTab/UserQueries/useAddUser';
@@ -45,7 +46,7 @@ import AddUserDialog from './AddUserDialog';
 import canAllowAdminHelper from './UsersHelper';
 
 const UsersSection = (props) => {
-  const { cluster, clusterHibernating, isReadOnly, region, isROSA } = props;
+  const { cluster, clusterHibernating, isReadOnly, region, isROSA, isHypershift } = props;
 
   const dispatch = useDispatch();
 
@@ -72,11 +73,15 @@ const UsersSection = (props) => {
   } = useDeleteUser(cluster.id, region);
 
   const isAddUserModalOpen = useGlobalState((state) => shouldShowModal(state, 'add-user'));
+  const iamOperatorRolesLink = isHypershift
+    ? links.ROSA_AWS_IAM_OPERATOR_ROLES
+    : links.ROSA_CLASSIC_AWS_IAM_OPERATOR_ROLES;
 
   const canAddClusterAdmin = canAllowAdminHelper(cluster);
   const clusterGroupUsers = users;
   const hasUsers = users?.users?.length > 0;
   const [deletedRowIndex, setDeletedRowIndex] = React.useState(null);
+  const [pendingDeletion, setPendingDeletion] = React.useState(null);
 
   React.useEffect(() => {
     if (clusterGroupUsers.clusterID !== cluster.id || !isUsersLoading) {
@@ -179,6 +184,22 @@ const UsersSection = (props) => {
     </>
   );
 
+  const handleDeleteConfirm = () => {
+    if (pendingDeletion) {
+      const { user, index } = pendingDeletion;
+      setDeletedRowIndex(index);
+      deleteUserMutate(
+        { groupID: user.group, userID: user.id },
+        {
+          onSuccess: () => {
+            refetchUsers();
+          },
+        },
+      );
+      setPendingDeletion(null);
+    }
+  };
+
   const userRow = (user, index) =>
     deletedRowIndex === index ? (
       <Tr key={user.id}>
@@ -202,15 +223,7 @@ const UsersSection = (props) => {
               {
                 title: 'Delete',
                 onClick: () => {
-                  setDeletedRowIndex(index);
-                  deleteUserMutate(
-                    { groupID: user.group, userID: user.id },
-                    {
-                      onSuccess: () => {
-                        refetchUsers();
-                      },
-                    },
-                  );
+                  setPendingDeletion({ user, index });
                 },
               },
             ]}
@@ -237,9 +250,7 @@ const UsersSection = (props) => {
         </StackItem>
         <StackItem>
           <p>
-            <ExternalLink
-              href={isROSA ? links.ROSA_AWS_IAM_OPERATOR_ROLES : links.OSD_DEDICATED_ADMIN_ROLE}
-            >
+            <ExternalLink href={isROSA ? iamOperatorRolesLink : links.OSD_DEDICATED_ADMIN_ROLE}>
               Learn more.
             </ExternalLink>
           </p>
@@ -276,6 +287,16 @@ const UsersSection = (props) => {
         clusterID={cluster.id}
         canAddClusterAdmin={canAddClusterAdmin}
         isROSA={isROSA}
+        isHypershift={isHypershift}
+      />
+      <ConfirmationDialog
+        title="Are you sure you want to delete this user?"
+        content="The user will be permanently removed from the cluster."
+        primaryActionLabel="Delete"
+        primaryAction={handleDeleteConfirm}
+        secondaryActionLabel="Cancel"
+        isOpen={pendingDeletion !== null}
+        closeCallback={() => setPendingDeletion(null)}
       />
     </>
   );
@@ -287,6 +308,7 @@ UsersSection.propTypes = {
   clusterHibernating: PropTypes.bool.isRequired,
   isReadOnly: PropTypes.bool.isRequired,
   isROSA: PropTypes.bool.isRequired,
+  isHypershift: PropTypes.bool.isRequired,
 };
 
 export default UsersSection;
